@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>وزارة الصحة العراقية - الحجز الطبي</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+margin:0;
+background:#eef4f8;
+direction:rtl;
+text-align:center;
+}
+
+header{
+background:#0d6efd;
+color:white;
+padding:20px;
+font-size:22px;
+font-weight:bold;
+line-height:1.8;
+}
+
+.card{
+background:white;
+margin:15px;
+padding:20px;
+border-radius:15px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+input,select,button{
+width:90%;
+padding:12px;
+margin:10px;
+border-radius:10px;
+border:1px solid #ccc;
+font-size:18px;
+box-sizing:border-box;
+}
+
+button{
+background:#198754;
+color:white;
+border:none;
+cursor:pointer;
+font-weight:bold;
+}
+
+button:hover{
+opacity:0.9;
+}
+
+.result{
+background:#d1e7dd;
+padding:10px;
+margin:10px;
+border-radius:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+font-size:15px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:8px;
+}
+
+th{
+background:#0d6efd;
+color:white;
+}
+
+footer{
+background:#0d6efd;
+color:white;
+padding:15px;
+margin-top:20px;
+}
+
+.small-btn{
+width:auto;
+padding:8px 12px;
+margin:3px;
+font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+🇮🇶 جمهورية العراق<br>
+وزارة الصحة<br><br>
+Republic of Iraq<br>
+Ministry of Health
+</header>
+
+<div class="card">
+<h2>📅 الحجز الطبي</h2>
+
+<input type="text" id="name" placeholder="اسم المريض">
+<input type="text" id="phone" placeholder="رقم الهاتف">
+<input type="date" id="date">
+<input type="time" id="time">
+
+<select id="specialty" onchange="loadDoctors()">
+<option>اختر الاختصاص</option>
+<option>باطنية</option>
+<option>أسنان</option>
+<option>أطفال</option>
+<option>جلدية</option>
+<option>عيون</option>
+<option>عظام</option>
+<option>نسائية</option>
+</select>
+
+<select id="doctor">
+<option>اختر الدكتور</option>
+</select>
+
+<button onclick="saveBooking()">تأكيد الحجز</button>
+
+<div id="msg"></div>
+</div>
+
+<div class="card">
+<h2>🔍 البحث عن حجز</h2>
+
+<input type="text" id="searchName" placeholder="اكتب الاسم">
+
+<button onclick="searchBooking()">بحث</button>
+
+<div id="searchResult"></div>
+</div>
+
+<div class="card">
+<h2>📋 قاعدة بيانات الحجوزات</h2>
+
+<button onclick="showAllBookings()">عرض جميع الحجوزات</button>
+
+<div id="allBookings"></div>
+</div>
+
+<script>
+function loadDoctors(){
+let specialty = document.getElementById("specialty").value;
+let doctor = document.getElementById("doctor");
+
+let data = {
+"باطنية":[
+"د. أحمد علي - Dr. Ahmed Ali",
+"د. عمر خالد - Dr. Omar Khalid",
+"د. زهراء حسن - Dr. Zahraa Hassan"
+],
+
+"أسنان":[
+"د. سارة محمد - Dr. Sarah Mohammed",
+"د. علي جاسم - Dr. Ali Jasim",
+"د. نور كريم - Dr. Noor Kareem"
+],
+
+"أطفال":[
+"د. زينب عبد الله - Dr. Zainab Abdullah",
+"د. يوسف سالم - Dr. Yousef Salem",
+"د. مريم سعد - Dr. Maryam Saad"
+],
+
+"جلدية":[
+"د. حسن ناظم - Dr. Hassan Nazim",
+"د. نور علي - Dr. Noor Ali",
+"د. رشا كريم - Dr. Rasha Kareem"
+],
+
+"عيون":[
+"د. كرار أحمد - Dr. Karrar Ahmed",
+"د. بتول علي - Dr. Batool Ali",
+"د. قاسم نور - Dr. Qasim Noor"
+],
+
+"عظام":[
+"د. حسين جابر - Dr. Hussein Jaber",
+"د. مهند كريم - Dr. Muhannad Kareem",
+"د. شهد عمر - Dr. Shahd Omar"
+],
+
+"نسائية":[
+"د. آية محمد - Dr. Aya Mohammed",
+"د. هدى كريم - Dr. Huda Kareem",
+"د. سمر خالد - Dr. Samar Khalid"
+]
+};
+
+doctor.innerHTML = "<option>اختر الدكتور</option>";
+
+if(data[specialty]){
+data[specialty].forEach(function(d){
+doctor.innerHTML += "<option>"+d+"</option>";
+});
+}
+}
+
+function saveBooking(){
+let name = document.getElementById("name").value.trim();
+let phone = document.getElementById("phone").value.trim();
+let date = document.getElementById("date").value;
+let time = document.getElementById("time").value;
+let specialty = document.getElementById("specialty").value;
+let doctor = document.getElementById("doctor").value;
+
+if(name=="" || phone=="" || date=="" || time=="" || specialty=="اختر الاختصاص" || doctor=="اختر الدكتور"){
+alert("يرجى ملء جميع الحقول");
+return;
+}
+
+for(let i=0;i<localStorage.length;i++){
+let key = localStorage.key(i);
+let item = JSON.parse(localStorage.getItem(key));
+
+if(item && item.doctor==doctor && item.date==date && item.time==time && key!=name){
+document.getElementById("msg").innerHTML =
+"<div class='result'>❌ هذا الموعد محجوز مسبقًا</div>";
+return;
+}
+}
+
+let booking = {
+name:name,
+phone:phone,
+date:date,
+time:time,
+specialty:specialty,
+doctor:doctor
+};
+
+localStorage.setItem(name, JSON.stringify(booking));
+
+document.getElementById("msg").innerHTML =
+"<div class='result'>✅ تم حفظ الحجز بنجاح</div>";
+
+document.getElementById("name").value="";
+document.getElementById("phone").value="";
+document.getElementById("date").value="";
+document.getElementById("time").value="";
+document.getElementById("specialty").value="اختر الاختصاص";
+document.getElementById("doctor").innerHTML="<option>اختر الدكتور</option>";
+}
+
+function searchBooking(){
+let search = document.getElementById("searchName").value.trim();
+let data = localStorage.getItem(search);
+
+if(data){
+let b = JSON.parse(data);
+
+document.getElementById("searchResult").innerHTML =
+"<div class='result'>" +
+"👤 "+b.name+"<br>" +
+"📞 "+b.phone+"<br>" +
+"📅 "+b.date+"<br>" +
+"⏰ "+b.time+"<br>" +
+"🩺 "+b.specialty+"<br>" +
+"👨‍⚕️ "+b.doctor+"<br><br>" +
+
+"<button class='small-btn' onclick=\"editBooking('"+b.name+"')\">✏️ تعديل</button>" +
+"<button class='small-btn' onclick=\"deleteBooking('"+b.name+"')\">🗑️ حذف</button>" +
+"</div>";
+
+}else{
+document.getElementById("searchResult").innerHTML =
+"<div class='result'>❌ لا يوجد حجز</div>";
+}
+}
+
+function deleteBooking(name){
+localStorage.removeItem(name);
+
+document.getElementById("searchResult").innerHTML =
+"<div class='result'>🗑️ تم حذف الحجز</div>";
+
+showAllBookings();
+}
+
+function editBooking(name){
+let data = JSON.parse(localStorage.getItem(name));
+
+document.getElementById("name").value = data.name;
+document.getElementById("phone").value = data.phone;
+document.getElementById("date").value = data.date;
+document.getElementById("time").value = data.time;
+document.getElementById("specialty").value = data.specialty;
+
+loadDoctors();
+
+document.getElementById("doctor").value = data.doctor;
+
+window.scrollTo(0,0);
+}
+
+function showAllBookings(){
+let output = "";
+
+if(localStorage.length==0){
+document.getElementById("allBookings").innerHTML =
+"<div class='result'>لا توجد حجوزات</div>";
+return;
+}
+
+output += `
+<table>
+<tr>
+<th>#</th>
+<th>الاسم</th>
+<th>الهاتف</th>
+<th>التاريخ</th>
+<th>الوقت</th>
+<th>الاختصاص</th>
+<th>الدكتور</th>
+<th>إدارة</th>
+</tr>
+`;
+
+let count = 1;
+
+for(let i=0;i<localStorage.length;i++){
+let key = localStorage.key(i);
+let b = JSON.parse(localStorage.getItem(key));
+
+if(b && b.name){
+output += `
+<tr>
+<td>${count}</td>
+<td>${b.name}</td>
+<td>${b.phone}</td>
+<td>${b.date}</td>
+<td>${b.time}</td>
+<td>${b.specialty}</td>
+<td>${b.doctor}</td>
+<td>
+<button class="small-btn" onclick="editBooking('${b.name}')">✏️</button>
+<button class="small-btn" onclick="deleteBooking('${b.name}')">🗑️</button>
+</td>
+</tr>
+`;
+count++;
+}
+}
+
+output += "</table>";
+
+document.getElementById("allBookings").innerHTML = output;
+}
+</script>
+
+<footer>
+© 2026 وزارة الصحة العراقية - جميع الحقوق محفوظة
+</footer>
+
+</body>
+</html>
